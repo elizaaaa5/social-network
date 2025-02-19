@@ -1,0 +1,126 @@
+specification {
+    element person
+    element system
+    element container
+    element db
+    element queue
+    element message_broker
+}
+
+model {
+    user_person = person "Пользователь" {
+        description "Пользователи взаимодействуют с системой через UI."
+    style {
+        shape person
+        color sky
+          }
+    }
+
+    user_interface = system "UI" {
+        description "Веб-интерфейс для взаимодействия с системой."
+    style {
+        shape browser
+        color slate
+          }
+    }
+
+    api_gateway_service = container "API Gateway" {
+        description "Обрабатывает все входящие запросы от UI и перенаправляет их к другим сервисам."
+        technology "Flask / Python"
+    style {
+        color slate
+          }
+    }
+
+    user_service_container = container "Сервис Пользователей" {
+        description "Регистрирует и аутентифицирует пользователей, хранит данные."
+        technology "Flask / Python"
+    style {
+        color green
+          }
+    }
+
+    user_db = db "База данных PostgreSQL" {
+        description "Хранит данные о пользователях."
+        technology "PostgreSQL"
+    style {
+        shape storage
+        color amber
+          }
+    }
+
+    post_service_container = container "Сервис Постов" {
+        description "Создает и управляет постами, хранит данные."
+        technology "Flask / Python"
+    style {
+        color green
+          }
+    }
+
+    post_db = db "База данных PostgreSQL / Cassandra" {
+        description "Хранит данные о постах."
+        technology "PostgreSQL / Cassandra"
+    style {
+        shape storage
+        color amber
+          }
+    }
+
+    statistics_service_container = container "Сервис Статистики" {
+        description "Подсчитывает лайки, просмотры и комментарии."
+        technology "Flask / Python"
+    style {
+        color green
+          }
+    }
+
+    stats_db = db "База данных ClickHouse" {
+        description "Хранит статистику."
+        technology "ClickHouse"
+    style {
+        shape storage
+        color amber
+          }
+    }
+
+    comments_service_container = container "Сервис Комментариев" {
+        description "Создает и управляет комментариями."
+        technology "Flask / Python"
+    style {
+        color green
+          }
+    }
+
+    comments_db = db "База данных PostgreSQL" {
+        description "Хранит комментарии."
+        technology "PostgreSQL"
+    style {
+        shape storage
+        color amber
+          }
+    }
+
+    message_broker = message_broker "Брокер сообщений" {
+        description "Передает события о лайках, просмотрах и комментариях в сервис статистики."
+        technology "Kafka / RabbitMQ"
+        style {
+            shape queue
+            color indigo
+        }
+    }
+
+    user_person -> user_interface
+    user_interface -> api_gateway_service
+    api_gateway_service -> user_service_container
+    api_gateway_service -> post_service_container
+    api_gateway_service -> statistics_service_container
+    api_gateway_service -> comments_service_container
+    user_service_container -> user_db
+    post_service_container -> post_db
+    statistics_service_container -> stats_db
+    comments_service_container -> comments_db
+    user_service_container -> message_broker
+    post_service_container -> message_broker
+    statistics_service_container -> message_broker
+    comments_service_container -> message_broker
+}
