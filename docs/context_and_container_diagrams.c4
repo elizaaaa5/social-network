@@ -49,17 +49,17 @@ model {
           }
     }
 
-    post_service_container = container "Сервис Постов" {
-        description "Создает и управляет постами, хранит данные."
+    post_service_container = container "Сервис Постов/Комментариев" {
+        description "Создает и управляет постами/комментариями, хранит данные."
         technology "Flask / Python"
     style {
         color green
           }
     }
 
-    post_db = db "База данных PostgreSQL / Cassandra" {
-        description "Хранит данные о постах."
-        technology "PostgreSQL / Cassandra"
+    post_db = db "База данных Cassandra" {
+        description "Хранит данные о постах/комментариях."
+        technology "Cassandra"
     style {
         shape storage
         color amber
@@ -83,26 +83,10 @@ model {
           }
     }
 
-    comments_service_container = container "Сервис Комментариев" {
-        description "Создает и управляет комментариями."
-        technology "Flask / Python"
-    style {
-        color green
-          }
-    }
-
-    comments_db = db "База данных PostgreSQL" {
-        description "Хранит комментарии."
-        technology "PostgreSQL"
-    style {
-        shape storage
-        color amber
-          }
-    }
 
     message_broker = message_broker "Брокер сообщений" {
         description "Передает события о лайках, просмотрах и комментариях в сервис статистики."
-        technology "Kafka / RabbitMQ"
+        technology "Kafka"
         style {
             shape queue
             color indigo
@@ -114,13 +98,10 @@ model {
     api_gateway_service -> user_service_container
     api_gateway_service -> post_service_container
     api_gateway_service -> statistics_service_container
-    api_gateway_service -> comments_service_container
     user_service_container -> user_db
     post_service_container -> post_db
     statistics_service_container -> stats_db
-    comments_service_container -> comments_db
     user_service_container -> message_broker
     post_service_container -> message_broker
     statistics_service_container -> message_broker
-    comments_service_container -> message_broker
 }
