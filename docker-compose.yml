@@ -17,8 +17,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db/userdb
       - SECRET_KEY=your-secret-key-here
+    command: ["sh", "-c", "while ! nc -z db 5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 8000"]
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:13
@@ -28,6 +30,11 @@ services:
       - POSTGRES_DB=userdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d userdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
