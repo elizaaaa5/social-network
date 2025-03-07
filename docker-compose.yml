@@ -17,7 +17,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db/userdb
       - SECRET_KEY=your-secret-key-here
-    command: ["sh", "-c", "while ! nc -z db 5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     depends_on:
       db:
         condition: service_healthy
