@@ -60,7 +60,7 @@ async def validate_token(token: str = Depends(oauth2_scheme)) -> str:
         if response.status_code != 200:
             raise HTTPException(status_code=401, detail="Invalid token")
     
-    return credentials.credentials
+    return token
 
 @app.post("/api/v1/register")
 async def register(user: UserRegisterRequest):
