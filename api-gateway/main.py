@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, validator
 from starlette.requests import Request
 from starlette.responses import JSONResponse

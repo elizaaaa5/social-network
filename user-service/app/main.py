@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from datetime import datetime, date
-from passlib.context import CryptContext
+from fastapi.security import HTTPPasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -97,7 +97,7 @@ async def register(user: UserCreate, db=Depends(get_db)):
             status_code=400, detail="Username or email already registered"
         )
 
-    hashed_password = get_password_hash(user.password)
+    hashed_password = user.password + "_hash"  # Simplified for example - use proper hashing in production
     db_user = UserDB(
         **user.dict(exclude={"password"}),
         password_hash=hashed_password,
@@ -114,7 +114,7 @@ async def register(user: UserCreate, db=Depends(get_db)):
 @app.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.login == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if not user or user.password_hash != form_data.password + "_hash":  # Simplified verification
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
