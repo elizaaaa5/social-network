@@ -1,10 +1,11 @@
 from logging.config import fileConfig
 
+from app.models import Base, UserDB
+from app.models import UserDB
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-from app.models import Base
-import app.models  # Ensure models are loaded
 from alembic import context
 
 # this is the Alembic Config object, which provides
@@ -21,6 +22,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
+print(target_metadata.tables)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

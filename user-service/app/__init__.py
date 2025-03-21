@@ -1,3 +1,3 @@
-from .models import Base, UserDB
+from app.models import Base, UserDB
 
 __all__ = ['Base', 'UserDB']

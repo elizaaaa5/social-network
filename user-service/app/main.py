@@ -103,7 +103,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
     if not hashed_password or "$" not in hashed_password:
         return False
-    
+
     salt, stored_hash = hashed_password.split("$", 1)
     password_hash = hashlib.sha256((plain_password + salt).encode()).hexdigest()
     return password_hash == stored_hash
@@ -210,7 +210,7 @@ async def update_user(
 
     # Update the user object with the new data
     for key, value in update_data.items():
-        setattr(db_user, key, value)
+        setattr(db_user, key, str(value))
 
     db.commit()
     db.refresh(db_user)
