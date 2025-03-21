@@ -78,7 +78,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{USER_SERVICE_URL}/token",
-            data=form_data.dict()
+            data={
+                "username": form_data.username,
+                "password": form_data.password,
+                "grant_type": "password"
+            }
         )
     return JSONResponse(content=response.json(), status_code=response.status_code)
 
