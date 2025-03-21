@@ -103,13 +103,22 @@ class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = None
-    birth_date: Optional[date] = None
+    birth_date: Optional[str] = None
     password: Optional[str] = None
     
     @validator('password')
     def validate_password(cls, v):
         if v is not None and len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
+        return v
+    
+    @validator('birth_date')
+    def validate_birth_date(cls, v):
+        if v is not None:
+            try:
+                datetime.fromisoformat(v)
+            except ValueError:
+                raise ValueError("Invalid date format. Use YYYY-MM-DD")
         return v
 
 @app.put("/api/v1/me")
