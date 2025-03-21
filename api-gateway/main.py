@@ -24,7 +24,7 @@ class UserRegisterRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = None
-    birth_date: Optional[date] = None
+    birth_date: Optional[str] = None
 
     @validator('password')
     def validate_password(cls, v):
