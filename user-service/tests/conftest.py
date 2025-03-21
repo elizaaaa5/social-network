@@ -5,22 +5,39 @@ from sqlalchemy.orm import sessionmaker
 from app.main import app, get_db
 from app.models import Base
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
+TEST_DATABASE_URL = "sqlite:///:memory:"
 
 @pytest.fixture(scope="session")
 def db_engine():
-    engine = create_engine(TEST_DATABASE_URL)
+    # Use filelock to prevent SQLite multithreading issues
+    engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool
+    )
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 @pytest.fixture(scope="function")
 def db_session(db_engine):
     connection = db_engine.connect()
-    transaction = connection.begin()
+    
+    # Begin a nested transaction (using SAVEPOINT)
+    transaction = connection.begin_nested()
     Session = sessionmaker(bind=connection)
     session = Session()
+
+    # Allow database connection to be reused for nested transactions
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(session, transaction):
+        if transaction.nested and not transaction._parent.nested:
+            session.begin_nested()
+
     yield session
+    
+    # Cleanup
     session.close()
     transaction.rollback()
     connection.close()
