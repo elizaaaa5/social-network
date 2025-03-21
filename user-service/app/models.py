@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import os
 
 Base = declarative_base()
+metadata = Base.metadata  # Add explicit metadata export
 
 class UserDB(Base):
     __tablename__ = "users"
