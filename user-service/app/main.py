@@ -5,10 +5,11 @@ from typing import Optional
 from datetime import datetime, date
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from sqlalchemy import create_engine, Column, String, Date, DateTime, Boolean
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
+import uuid
+from app.models import UserDB
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/userdb")
@@ -20,15 +21,13 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI(
     title="User Service",
     description="Handles user registration, authentication and profile management",
-    version="1.0.0"
+    version="1.0.0",
 )
-
 
 
 # Pydantic models
@@ -44,7 +43,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-    @validator('password')
+    @validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters")
@@ -88,15 +87,23 @@ def create_access_token(data: dict):
 # Routes
 @app.post("/register", response_model=UserResponse)
 async def register(user: UserCreate, db=Depends(get_db)):
-    db_user = db.query(UserDB).filter((UserDB.login == user.login) | (UserDB.email == user.email)).first()
+    db_user = (
+        db.query(UserDB)
+        .filter((UserDB.login == user.login) | (UserDB.email == user.email))
+        .first()
+    )
     if db_user:
-        raise HTTPException(status_code=400, detail="Username or email already registered")
+        raise HTTPException(
+            status_code=400, detail="Username or email already registered"
+        )
 
     hashed_password = get_password_hash(user.password)
     db_user = UserDB(
-        **user.dict(exclude={'password'}),
-        password_hash=hashed_password
+        **user.dict(exclude={"password"}),
+        password_hash=hashed_password,
+        id=uuid.uuid4(),
     )
+    db_user.id = uuid.uuid4()
 
     db.add(db_user)
     db.commit()
@@ -114,9 +121,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(
-        data={"sub": user.login}
-    )
+    access_token = create_access_token(data={"sub": user.login})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
