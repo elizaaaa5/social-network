@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, validator
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -10,10 +10,28 @@ import httpx
 app = FastAPI(
     title="API Gateway",
     description="Routes requests to backend services",
-    version="1.0.0"
+    version="1.0.0",
+    swagger_ui_oauth2_redirect_url="/oauth2-redirect",
+    swagger_ui_init_oauth={
+        "clientId": "gateway-client",
+        "usePkceWithAuthorizationCodeGrant": True
+    },
+    components={
+        "securitySchemes": {
+            "oauth2": {
+                "type": "oauth2",
+                "flows": {
+                    "password": {
+                        "tokenUrl": "/api/v1/token",
+                        "scopes": {}
+                    }
+                }
+            }
+        }
+    }
 )
 
-SECURITY = HTTPBearer()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
 USER_SERVICE_URL = "http://user-service:8000"
 
 # Request schemas mirroring user service
@@ -32,19 +50,12 @@ class UserRegisterRequest(BaseModel):
             raise ValueError("Password must be at least 8 characters")
         return v
 
-class UserLoginRequest(BaseModel):
-    username: str
-    password: str
 
-async def validate_token(request: Request) -> str:
-    credentials: HTTPAuthorizationCredentials = await SECURITY(request)
-    if not credentials.scheme == "Bearer":
-        raise HTTPException(status_code=403, detail="Invalid authentication scheme")
-    
+async def validate_token(token: str = Depends(oauth2_scheme)) -> str:
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{USER_SERVICE_URL}/me",
-            headers={"Authorization": f"Bearer {credentials.credentials}"}
+            headers={"Authorization": f"Bearer {token}"}
         )
         if response.status_code != 200:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -58,10 +69,12 @@ async def register(user: UserRegisterRequest):
             f"{USER_SERVICE_URL}/register",
             json=user.dict()
         )
-    return JSONResponse(content=response.json(), status_code=response.status_code)
+    content = response.json()
+    content["token_type"] = "Bearer"  # Ensure proper case for Swagger
+    return JSONResponse(content=content, status_code=response.status_code)
 
 @app.post("/api/v1/token")
-async def login(form_data: UserLoginRequest):
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{USER_SERVICE_URL}/token",
