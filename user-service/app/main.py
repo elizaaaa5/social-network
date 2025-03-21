@@ -6,9 +6,10 @@ from datetime import datetime, date, timedelta
 from jose import JWTError, jwt
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from passlib.context import CryptContext
 import os
 import uuid
+import hashlib
+import secrets
 from app.models import UserDB
 
 # Database configuration
@@ -21,8 +22,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "secret-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing salt
+SALT_LENGTH = 16
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI(
@@ -91,12 +92,21 @@ def get_db():
 
 
 # Helper functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def get_password_hash(password: str) -> str:
+    """Hash a password with a random salt using SHA-256"""
+    salt = secrets.token_hex(SALT_LENGTH)
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}${password_hash}"
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against a hash"""
+    if not hashed_password or "$" not in hashed_password:
+        return False
+    
+    salt, stored_hash = hashed_password.split("$", 1)
+    password_hash = hashlib.sha256((plain_password + salt).encode()).hexdigest()
+    return password_hash == stored_hash
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
