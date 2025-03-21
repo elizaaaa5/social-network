@@ -1,7 +1,10 @@
 import pytest
-from app.main import UserDB
+from fastapi.testclient import TestClient
+import json
+from app.models import UserDB
 
 def test_register_user_success(client):
+    """Test successful user registration"""
     response = client.post("/register", json={
         "login": "newuser",
         "email": "new@example.com",
@@ -9,9 +12,14 @@ def test_register_user_success(client):
         "first_name": "New"
     })
     assert response.status_code == 200
-    assert "id" in response.json()
+    data = response.json()
+    assert "id" in data
+    assert data["login"] == "newuser"
+    assert data["email"] == "new@example.com"
+    assert data["first_name"] == "New"
 
 def test_register_duplicate_user(client):
+    """Test duplicate user registration fails"""
     # First registration
     client.post("/register", json={
         "login": "duplicate",
@@ -29,6 +37,7 @@ def test_register_duplicate_user(client):
     assert "already registered" in response.text
 
 def test_login_success(client):
+    """Test successful login"""
     # Register first
     client.post("/register", json={
         "login": "testlogin",
@@ -42,9 +51,12 @@ def test_login_success(client):
         "password": "testpass123"
     })
     assert response.status_code == 200
-    assert "access_token" in response.json()
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
 
 def test_login_invalid_credentials(client):
+    """Test login with invalid credentials"""
     response = client.post("/token", data={
         "username": "nonexistent",
         "password": "wrongpass"
@@ -53,10 +65,13 @@ def test_login_invalid_credentials(client):
     assert "Incorrect username or password" in response.text
 
 def test_protected_route_unauthorized(client):
+    """Test accessing protected route without token"""
     response = client.get("/me")
     assert response.status_code == 401
+    assert "Not authenticated" in response.text
 
 def test_update_user_profile(client):
+    """Test updating user profile"""
     # Register and login
     client.post("/register", json={
         "login": "updateuser",
@@ -75,4 +90,6 @@ def test_update_user_profile(client):
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
-    assert response.json()["email"] == "newemail@example.com"
+    data = response.json()
+    assert data["email"] == "newemail@example.com"
+    assert data["login"] == "updateuser"  # Original data preserved
