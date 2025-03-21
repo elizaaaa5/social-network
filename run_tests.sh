@@ -8,6 +8,8 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}Running user-service tests...${NC}"
+export SECRET_KEY="test-secret-key"
+export DATABASE_URL="sqlite:///:memory:"
 cd user-service && pytest tests/ -v --cov=app --cov-report=term-missing
 
 echo -e "${GREEN}Running api-gateway tests...${NC}"
