@@ -10,7 +10,7 @@ import os
 from typing import List, Optional
 
 # Get Cassandra configuration from environment variables
-CASSANDRA_HOSTS = os.getenv("CASSANDRA_HOSTS", "cassandra").split(",")
+CASSANDRA_HOSTS = os.getenv("CASSANDRA_HOSTS", "cassandra-db").split(",")
 CASSANDRA_KEYSPACE = os.getenv("CASSANDRA_KEYSPACE", "post_service")
 CASSANDRA_USER = os.getenv("CASSANDRA_USER", "cassandra")
 CASSANDRA_PASSWORD = os.getenv("CASSANDRA_PASSWORD", "cassandra")
@@ -81,11 +81,24 @@ class PostRepository:
             return None
     
     def list_posts(self, user_id: str, page: int = 1, page_size: int = 10) -> tuple[List[Post], int]:
-        offset = (page - 1) * page_size
         query = Post.objects.filter(user_id=user_id)
-        total = query.count()
-        posts = list(query.limit(page_size).offset(offset))
-        return posts, total
+        total = query.count() # Get total count first
+
+        # Fetch enough items to cover up to the desired page
+        # Note: This can be inefficient for large page numbers in Cassandra
+        # A better approach might involve cursor-based pagination (paging state)
+        # if performance becomes an issue.
+        limit_needed = page * page_size
+        fetched_posts = list(query.limit(limit_needed))
+
+        # Calculate the slice start index
+        start_index = (page - 1) * page_size
+
+        # Get the posts for the requested page
+        posts_for_page = fetched_posts[start_index:] 
+        # We don't need end_index because limit already capped the total fetched items
+
+        return posts_for_page, total
     
     def update_post(self, post_id: str, title: str, content: str) -> Optional[Post]:
         try:

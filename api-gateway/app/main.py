@@ -7,6 +7,9 @@ from starlette.responses import JSONResponse
 import httpx
 import uuid
 
+# Импортируем роутер постов
+from app import posts
+
 app = FastAPI(
     title="API Gateway",
     description="Routes requests to backend services",
@@ -26,8 +29,8 @@ app = FastAPI(
     },
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/token")
-USER_SERVICE_URL = "http://user-service:8000"
+# Импортируем необходимые компоненты из модуля auth
+from app.auth import validate_token, oauth2_scheme, USER_SERVICE_URL
 
 
 # Request schemas mirroring user service
@@ -47,17 +50,6 @@ class UserRegisterRequest(BaseModel):
         return v
 
 
-async def validate_token(token: str = Depends(oauth2_scheme)) -> Dict[str, Any]:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{USER_SERVICE_URL}/me", headers={"Authorization": f"Bearer {token}"}
-        )
-        if response.status_code != 200:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-    return response.json()
-
-
 @app.post("/api/v1/register", tags=["users"])
 async def register(user: UserRegisterRequest):
     async with httpx.AsyncClient() as client:
@@ -70,6 +62,7 @@ async def register(user: UserRegisterRequest):
 @app.post("/api/v1/token", tags=["users"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     async with httpx.AsyncClient() as client:
+        print("URL IS\n\n\n\n\n", f"{USER_SERVICE_URL}/token")
         response = await client.post(
             f"{USER_SERVICE_URL}/token",
             data={
@@ -137,3 +130,7 @@ async def update_profile(
         )
 
     return response.json()
+
+
+# Подключаем роутер постов
+app.include_router(posts.router)

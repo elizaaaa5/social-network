@@ -3,11 +3,11 @@ syntax = "proto3";
 package post;
 
 service PostService {
-  rpc CreatePost (CreatePostRequest) returns (Post);
-  rpc GetPost (GetPostRequest) returns (Post);
-  rpc ListPosts (ListPostsRequest) returns (ListPostsResponse);
-  rpc UpdatePost (UpdatePostRequest) returns (Post);
-  rpc DeletePost (DeletePostRequest) returns (DeletePostResponse);
+  rpc CreatePost(CreatePostRequest) returns (Post);
+  rpc GetPost(GetPostRequest) returns (Post);
+  rpc ListPosts(ListPostsRequest) returns (ListPostsResponse);
+  rpc UpdatePost(UpdatePostRequest) returns (Post);
+  rpc DeletePost(DeletePostRequest) returns (DeletePostResponse);
 }
 
 message CreatePostRequest {
@@ -16,9 +16,7 @@ message CreatePostRequest {
   string content = 3;
 }
 
-message GetPostRequest {
-  string post_id = 1;
-}
+message GetPostRequest { string post_id = 1; }
 
 message ListPostsRequest {
   string user_id = 1;
@@ -39,12 +37,10 @@ message UpdatePostRequest {
 
 message DeletePostRequest {
   string post_id = 1;
-  string user_id = 2;  // For authorization
+  string user_id = 2; // For authorization
 }
 
-message DeletePostResponse {
-  bool success = 1;
-}
+message DeletePostResponse { bool success = 1; }
 
 message Post {
   string id = 1;

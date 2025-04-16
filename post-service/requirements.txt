@@ -1,5 +1,7 @@
 grpcio
-grpcio-tools
 cassandra-driver
-protobuf
+protobuf>=6.30.1
 python-dotenv
+pytest
+pytest-mock
+pytest-cov

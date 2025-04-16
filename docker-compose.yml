@@ -4,20 +4,31 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - USER_SERVICE_URL=http://user-service:8001
+      - USER_SERVICE_URL=http://user-service:8000
+      - POST_SERVICE_URL=post-service:50051
+      - GRPC_DNS_RESOLVER=native
     depends_on:
       - user-service
+      - post-service
 
   user-service:
+    container_name: user-service
     build: ./user-service
     ports:
       - "8001:8000"
     environment:
       - DATABASE_URL=postgresql://user:password@db/userdb
-      - SECRET_KEY=your-secret-key-here
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+      - SECRET_KEY=super-secret-key
     depends_on:
       db:
+        condition: service_healthy
+
+  post-service:
+    container_name: post-service
+    hostname: post-service
+    build: ./post-service
+    depends_on:
+      cassandra-db:
         condition: service_healthy
 
   db:
@@ -36,3 +47,24 @@ services:
       timeout: 5s
       retries: 5
 
+  cassandra-db:
+    image: cassandra:latest
+    container_name: cassandra-db
+    hostname: cassandra-db
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+    logging:
+      driver: none
+    ports:
+      - "9042:9042"
+    volumes:
+      - ./cassandra-db:/var/lib/cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: SolarSystem
+      CASSANDRA_DC: Mars
+      CASSANDRA_RACK: West
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+      CASSANDRA_NUM_TOKENS: 128
